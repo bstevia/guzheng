@@ -1,0 +1,193 @@
+:root {
+  --wood-dark: #6b3f1d;
+  --wood: #8a5a2b;
+  --wood-light: #b8824a;
+  --string: #d8c9a0;
+  --accent: #2fb16b;
+  --bridge: 28%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #1c1410;
+  color: #f3ead9;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+header h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: #c9b89a;
+  line-height: 1.5;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset-select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #2a1e14;
+  color: #f3ead9;
+  border: 1px solid var(--wood);
+  cursor: pointer;
+}
+
+.preset-select:hover {
+  border-color: var(--wood-light);
+}
+
+header button {
+  background: var(--wood);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+header button:hover {
+  background: var(--wood-light);
+}
+
+.reset {
+  background: #444 !important;
+}
+
+.tuner {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+}
+
+.tuner label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.tuner label > span {
+  color: #c9b89a;
+  width: 26px;
+}
+
+.tuner select {
+  flex: 1;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 20px;
+  padding: 18px 16px;
+  height: 70vh;
+  min-height: 360px;
+  background: linear-gradient(90deg, var(--wood-light), var(--wood) 30%, var(--wood-dark));
+  border-radius: 14px;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+  touch-action: none;
+  user-select: none;
+  overflow: hidden;
+}
+
+.board.bend-mode {
+  cursor: ns-resize;
+}
+
+.bend-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--bridge);
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.12) 0 8px,
+    rgba(0, 0, 0, 0.18) 8px 16px
+  );
+  pointer-events: none;
+}
+
+.bridge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--bridge);
+  width: 10px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #3a2410, #caa15f 45%, #fff 50%, #caa15f 55%, #3a2410);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.string {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+
+.string .wire {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), var(--string), rgba(0, 0, 0, 0.2));
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  transition: transform 0.04s ease;
+}
+
+.string.marked .wire {
+  height: 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), #6fe6a6, rgba(0, 0, 0, 0.2));
+}
+
+.string.active .wire {
+  transform: scaleY(2.5);
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+
+.string .label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  color: #2b1a0c;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-right: 4px;
+  pointer-events: none;
+}

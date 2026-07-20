@@ -32,7 +32,9 @@ export default function App() {
       <header>
         <h1>Guzheng</h1>
         <p className="hint">
-          Drag vertically across the strings to play. Hold <kbd>Q</kbd> or pluck behind the bridge to bend
+          Drag vertically across the strings to play, or strum with the keyboard
+          (<kbd>A</kbd>-<kbd>'</kbd> and <kbd>Z</kbd>-<kbd>/</kbd>) — press several keys at once for chords.
+          Hold <kbd>Q</kbd> or pluck behind the bridge to bend
         </p>
         <div className="controls">
           <select className="preset-select" value={key} onChange={(e) => handleKeyChange(e.target.value)}>

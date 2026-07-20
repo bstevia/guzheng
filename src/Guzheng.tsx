@@ -11,6 +11,22 @@ const BRIDGE_FRACTION = 0.28
 const MAX_BEND = 2
 const BEND_RANGE_PX = 200
 
+// change when adding extra octaves ???
+const STRUM_KEYS: { code: string; label: string }[] = [
+  { code: 'KeyA', label: 'A' }, { code: 'KeyS', label: 'S' }, { code: 'KeyD', label: 'D' },
+  { code: 'KeyF', label: 'F' }, { code: 'KeyG', label: 'G' }, { code: 'KeyH', label: 'H' },
+  { code: 'KeyJ', label: 'J' }, { code: 'KeyK', label: 'K' }, { code: 'KeyL', label: 'L' },
+  { code: 'Semicolon', label: ';' }, { code: 'Quote', label: "'" },
+  { code: 'KeyZ', label: 'Z' }, { code: 'KeyX', label: 'X' }, { code: 'KeyC', label: 'C' },
+  { code: 'KeyV', label: 'V' }, { code: 'KeyB', label: 'B' }, { code: 'KeyN', label: 'N' },
+  { code: 'KeyM', label: 'M' }, { code: 'Comma', label: ',' }, { code: 'Period', label: '.' },
+  { code: 'Slash', label: '/' },
+]
+
+const STRUM_INDEX: Record<string, number> = Object.fromEntries(
+  STRUM_KEYS.map((k, i) => [k.code, i]),
+)
+
 function letterOf(note: Note): string {
   return /^([A-G][#b]?)/.exec(note)?.[1] ?? ''
 }
@@ -30,6 +46,8 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
   const lastIndex = useRef(-1)
   const bendKeyHeld = useRef(false)
   const lastPointerY = useRef<number | null>(null)
+  const heldKeys = useRef<Set<string>>(new Set())
+  const litTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
 
   const lastVoice = useRef<Map<number, Voice>>(new Map())
   const bend = useRef<{
@@ -40,11 +58,28 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
   } | null>(null)
 
   const [active, setActive] = useState(-1)
+  const [lit, setLit] = useState<Set<number>>(new Set())
   const [bending, setBending] = useState(false)
 
   function highlight(index: number): void {
     setActive(index)
     setTimeout(() => setActive((cur) => (cur === index ? -1 : cur)), 180)
+  }
+
+  // Like highlight(), but supports many strings glowing at once (chords) since
+  // each lit string tracks its own fade-out timer.
+  function flash(index: number): void {
+    setLit((prev) => new Set(prev).add(index))
+    const existing = litTimers.current.get(index)
+    if (existing) clearTimeout(existing)
+    litTimers.current.set(index, setTimeout(() => {
+      setLit((prev) => {
+        const next = new Set(prev)
+        next.delete(index)
+        return next
+      })
+      litTimers.current.delete(index)
+    }, 180))
   }
 
   function indexFromY(clientY: number): number {
@@ -98,6 +133,21 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
+      const strumIdx = STRUM_INDEX[e.code]
+      if (strumIdx !== undefined) {
+        // Prevent browser defaults (e.g. Firefox's quick-find on `/` and `'`).
+        e.preventDefault()
+        // Guard against auto-repeat so a held key plucks only once. Each
+        // simultaneously-held key gets its own voice, so chords just work.
+        if (e.repeat || heldKeys.current.has(e.code)) return
+        if (strumIdx >= tuning.length) return
+        heldKeys.current.add(e.code)
+        const voice = pluck(tuning[strumIdx])
+        lastVoice.current.set(strumIdx, voice)
+        flash(strumIdx)
+        return
+      }
+
       if (e.code !== 'KeyQ' || bendKeyHeld.current) return
       bendKeyHeld.current = true
       playing.current = false
@@ -110,6 +160,10 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
       }
     }
     function onKeyUp(e: KeyboardEvent): void {
+      if (STRUM_INDEX[e.code] !== undefined) {
+        heldKeys.current.delete(e.code)
+        return
+      }
       if (e.code !== 'KeyQ') return
       bendKeyHeld.current = false
       setBending(false)
@@ -191,6 +245,7 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
 
       {order.map((i) => {
         const note = tuning[i]
+        const keyLabel = STRUM_KEYS[i]?.label
         return (
           <div
             key={i}
@@ -198,11 +253,12 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
             className={
               'string' +
               (isMarked(note, i) ? ' marked' : '') +
-              (active === i ? ' active' : '')
+              (active === i || lit.has(i) ? ' active' : '')
             }
             title={note}
           >
             <span className="wire" />
+            {keyLabel && <span className="keycap" aria-hidden>{keyLabel}</span>}
             <span className="label">{note}</span>
           </div>
         )

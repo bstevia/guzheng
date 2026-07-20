@@ -182,7 +182,6 @@ header button:hover {
 
 .string .label {
   position: relative;
-  z-index: 1;
   font-size: 11px;
   color: #2b1a0c;
   background: rgba(255, 255, 255, 0.6);
@@ -190,4 +189,25 @@ header button:hover {
   padding: 1px 4px;
   margin-right: 4px;
   pointer-events: none;
+}
+
+.string .keycap {
+  position: absolute;
+  left: 8px;
+  min-width: 18px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f3ead9;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  padding: 1px 4px;
+  pointer-events: none;
+}
+
+.string.active .keycap {
+  background: var(--accent);
+  color: #08110b;
+  border-color: rgba(255, 255, 255, 0.4);
 }

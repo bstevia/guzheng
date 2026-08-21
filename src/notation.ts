@@ -100,7 +100,7 @@ function tokenize(src: string): { tokens: Token[]; errors: ParseError[] } {
           continue
         }
         if (ch === '|') { tokens.push({ text: '|', line }); j++; continue }
-        errors.push({ line, message: 'stray `:` — did you mean `:|`?', text: ':' })
+        errors.push({ line, message: 'stray `:` - did you mean `:|`?', text: ':' })
         j++
         continue
       }
@@ -180,7 +180,7 @@ function readPitch(s: string, i: number): { spec: PitchSpec; next: number } | nu
   return { spec, next: i }
 }
 
-function emptyArticulation(): Articulation {
+export function emptyArticulation(): Articulation {
   return { tremolo: false, press: false, vibrato: false, accent: false, gliss: null }
 }
 
@@ -207,7 +207,7 @@ function parseStep(tok: Token): { step: Step } | { error: string } {
     if (!pitches.length) return { error: 'empty chord' }
   } else {
     const read = readPitch(s, 0)
-    if (!read) return { error: `not a note — expected 1-7, 0, or s<number>` }
+    if (!read) return { error: `not a note: expected 1-7, 0, or s<number>` }
     pitches.push(read.spec)
     i = read.next
   }
@@ -441,4 +441,35 @@ export function describePitch(spec: PitchSpec, ctx: ResolveContext): string {
   }
   const midi = pitchMidi(spec, ctx)
   return midi === null ? '?' : midiToNote(midi)
+}
+
+export function noteToPitchSpec(note: Note, ctx: ResolveContext): PitchSpec | null {
+  const midi = noteToMidi(note)
+  if (midi === null) return null
+
+  const root = SEMITONES[ctx.key] ?? 0
+  const tonic = (ctx.baseOctave + 1) * 12 + root
+  const rel = midi - tonic
+  const octave = Math.floor(rel / 12)
+  const within = rel - octave * 12
+
+  let degree = 1
+  let bestDist = Infinity
+  DEGREE_SEMITONES.forEach((semitone, i) => {
+    const dist = Math.abs(within - semitone)
+    if (dist < bestDist || (dist === bestDist && within - semitone < 0)) {
+      bestDist = dist
+      degree = i + 1
+    }
+  })
+
+  return { kind: 'degree', degree, alter: within - DEGREE_SEMITONES[degree - 1], octave, index: 0 }
+}
+
+/** Renders a spec back into the ASCII a player would type for it. */
+export function pitchSpecToInput(spec: PitchSpec): string {
+  if (spec.kind === 'string') return `s${spec.index}`
+  const accidental = spec.alter > 0 ? '#'.repeat(spec.alter) : 'b'.repeat(-spec.alter)
+  const marks = spec.octave > 0 ? "'".repeat(spec.octave) : ','.repeat(-spec.octave)
+  return `${accidental}${spec.degree}${marks}`
 }

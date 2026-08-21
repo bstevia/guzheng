@@ -6,6 +6,8 @@ interface GuzhengProps {
   tuning: Note[]
   markedNote: string | null
   pulse?: { strings: number[]; seq: number } | null
+  /** Reports strings the user just plucked by hand, for a live notation readout. */
+  onPlay?: (strings: number[]) => void
 }
 
 function isTextEntry(target: EventTarget | null): boolean {
@@ -45,7 +47,7 @@ function letterOf(note: Note): string {
 
 type BendSource = 'key' | 'bridge'
 
-export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
+export default function Guzheng({ tuning, markedNote, pulse, onPlay }: GuzhengProps) {
   const order = [...tuning.keys()]
 
   function isMarked(note: Note, index: number): boolean {
@@ -62,6 +64,10 @@ export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
   const litTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
 
   const lastVoice = useRef<Map<number, Voice>>(new Map())
+  // Keys pressed within this window of each other are reported as one chord,
+  // the same way holding several strum keys together sounds as one.
+  const chordBuffer = useRef<number[]>([])
+  const chordTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const bend = useRef<{
     voice: Voice
     index: number
@@ -72,6 +78,16 @@ export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
   const [active, setActive] = useState(-1)
   const [lit, setLit] = useState<Set<number>>(new Set())
   const [bending, setBending] = useState(false)
+
+  function reportKeyPlay(index: number): void {
+    chordBuffer.current.push(index)
+    if (chordTimer.current) clearTimeout(chordTimer.current)
+    chordTimer.current = setTimeout(() => {
+      onPlay?.(chordBuffer.current)
+      chordBuffer.current = []
+      chordTimer.current = null
+    }, 35)
+  }
 
   function highlight(index: number): void {
     setActive(index)
@@ -125,6 +141,7 @@ export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
     bend.current = { voice, index, anchorY, source: 'bridge' }
     setBending(true)
     setActive(index)
+    onPlay?.([index])
   }
 
   function applyBend(clientY: number): void {
@@ -158,6 +175,7 @@ export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
         const voice = pluck(tuning[strumIdx])
         lastVoice.current.set(strumIdx, voice)
         flash(strumIdx)
+        reportKeyPlay(strumIdx)
         return
       }
 
@@ -214,6 +232,7 @@ export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
       const voice = pluck(tuning[idx])
       lastVoice.current.set(idx, voice)
       highlight(idx)
+      onPlay?.([idx])
     }
   }
 
@@ -238,6 +257,7 @@ export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
       const voice = pluck(tuning[idx])
       lastVoice.current.set(idx, voice)
       highlight(idx)
+      onPlay?.([idx])
     }
   }
 

@@ -15,10 +15,18 @@ export default function App() {
   const [showNotation, setShowNotation] = useState(true)
   const [pulse, setPulse] = useState<{ strings: number[]; seq: number } | null>(null)
   const pulseSeq = useRef(0)
+  const [livePlay, setLivePlay] = useState<{ strings: number[]; seq: number } | null>(null)
+  const liveSeq = useRef(0)
 
   function handleStrike(strings: number[]): void {
     pulseSeq.current += 1
     setPulse({ strings, seq: pulseSeq.current })
+  }
+
+  function handlePlay(strings: number[]): void {
+    if (!strings.length) return
+    liveSeq.current += 1
+    setLivePlay({ strings, seq: liveSeq.current })
   }
 
   function handleKeyChange(newKey: string): void {
@@ -42,9 +50,8 @@ export default function App() {
         <h1>Guzheng</h1>
         <p className="hint">
           Drag vertically across the strings to play, or strum with the keyboard
-          (<kbd>A</kbd>-<kbd>'</kbd> and <kbd>Z</kbd>-<kbd>/</kbd>) — press several keys at once for chords.
           Hold <kbd>Q</kbd> or pluck behind the bridge to bend.
-          Or write a piece in numbered notation below and press play
+          Or write a piece in numbered notation below and press <kbd>Play</kbd>
         </p>
         <div className="controls">
           <select className="preset-select" value={key} onChange={(e) => handleKeyChange(e.target.value)}>
@@ -80,7 +87,12 @@ export default function App() {
         </div>
       )}
 
-      <Guzheng tuning={tuning} markedNote={markedNoteForKey(key, scale)} pulse={pulse} />
+      <Guzheng
+        tuning={tuning}
+        markedNote={markedNoteForKey(key, scale)}
+        pulse={pulse}
+        onPlay={handlePlay}
+      />
 
       {showNotation && (
         <Notation
@@ -88,6 +100,7 @@ export default function App() {
           musicKey={key}
           onStrike={handleStrike}
           onRequestKey={handleKeyChange}
+          livePlay={livePlay}
         />
       )}
     </div>

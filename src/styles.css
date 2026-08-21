@@ -241,6 +241,44 @@ header button:hover {
   color: #a4917a;
 }
 
+.live-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  min-height: 34px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(184, 130, 74, 0.4);
+  border-radius: 8px;
+}
+
+.live-input-label {
+  font-size: 12px;
+  color: #a4917a;
+  white-space: nowrap;
+}
+
+.live-input-digits {
+  display: flex;
+}
+
+.live-input .jianpu {
+  color: #f3ead9;
+}
+
+.live-input-digits .jp-step {
+  padding: 0 3px;
+}
+
+.live-input-text {
+  font-size: 13px;
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
 .notation-controls {
   display: flex;
   align-items: center;

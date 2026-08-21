@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   makeContext, parseScore, describePitch, pitchHeight,
+  noteToPitchSpec, pitchSpecToInput, emptyArticulation,
   type Item, type PitchSpec, type ResolveContext, type Step,
 } from './notation.ts'
 import { compileScore, Player } from './player.ts'
@@ -12,6 +13,8 @@ interface NotationProps {
   musicKey: string
   onStrike: (strings: number[]) => void
   onRequestKey: (key: string) => void
+  /** Strings the user just plucked by hand, shown as a live notation readout. */
+  livePlay?: { strings: number[]; seq: number } | null
 }
 
 const DEFAULT_TEMPO = 84
@@ -108,7 +111,7 @@ function ScoreView({
 
 // ------------------------------------------------------------------- panel
 
-export default function Notation({ tuning, musicKey, onStrike, onRequestKey }: NotationProps) {
+export default function Notation({ tuning, musicKey, onStrike, onRequestKey, livePlay }: NotationProps) {
   const [text, setText] = useState(() => exampleSource(EXAMPLES[0]))
   const [tempo, setTempo] = useState(DEFAULT_TEMPO)
   const [loop, setLoop] = useState(false)
@@ -171,14 +174,44 @@ export default function Notation({ tuning, musicKey, onStrike, onRequestKey }: N
   const totalBeats = score.steps.reduce((sum, s) => sum + s.beats, 0)
   const keyMismatch = score.meta.key !== null && score.meta.key !== musicKey
 
+  // shows notes / chords played in current notation
+  const liveSpecs = (livePlay?.strings ?? [])
+    .map((i) => tuning[i])
+    .filter((n): n is Note => n !== undefined)
+    .map((n) => noteToPitchSpec(n, ctx))
+    .filter((p): p is PitchSpec => p !== null)
+
+  const liveStep: Step | null = liveSpecs.length
+    ? { id: -1, pitches: liveSpecs, art: emptyArticulation(), beats: 1, halves: 0, dots: 0, extend: 0, line: 0, text: '' }
+    : null
+
+  const liveText = liveSpecs.length
+    ? (() => {
+        const ascending = [...liveSpecs].sort((a, b) => pitchHeight(a, ctx) - pitchHeight(b, ctx))
+        const parts = ascending.map(pitchSpecToInput)
+        return parts.length > 1 ? `[${parts.join(' ')}]` : parts[0]
+      })()
+    : ''
+
   return (
     <section className="notation">
       <div className="notation-head">
-        <h2>{score.meta.title ?? 'Notation'}</h2>
         <span className="notation-stat">
           {score.steps.length} notes · {totalBeats % 1 === 0 ? totalBeats : totalBeats.toFixed(2)} beats
           {compiled.totalMs > 0 && ` · ${(compiled.totalMs / 1000).toFixed(1)}s`}
         </span>
+      </div>
+
+      <div className="live-input" title="What you just played on the strings, in notation">
+        <span className="live-input-label">{liveStep ? 'You played' : 'Play a string to see it here'}</span>
+        {liveStep && (
+          <>
+            <span className="jianpu live-input-digits">
+              <StepView step={liveStep} ctx={ctx} playing={false} />
+            </span>
+            <code className="live-input-text">{liveText}</code>
+          </>
+        )}
       </div>
 
       <div className="notation-controls">
@@ -224,7 +257,7 @@ export default function Notation({ tuning, musicKey, onStrike, onRequestKey }: N
           {score.errors.map((err, i) => (
             <li key={i}>
               <span className="line">line {err.line}</span>
-              <code>{err.text}</code> — {err.message}
+              <code>{err.text}</code> : {err.message}
             </li>
           ))}
         </ul>
@@ -280,7 +313,7 @@ function SyntaxHelp() {
       </dl>
       <p>
         Degrees <code>4</code> and <code>7</code> are missing from a pentatonic guzheng, so they
-        are produced the way a player would — by pressing the string below them sharp.
+        are produced by bending
       </p>
     </div>
   )

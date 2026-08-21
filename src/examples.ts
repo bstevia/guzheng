@@ -18,8 +18,7 @@ export const EXAMPLES: Example[] = [
 // _ halves a note, . dots it, - holds it another beat.
 1_ 2_ 3_ 5_ 6_ 5_ 3_ 2_ | 6. 5_ 3 - ||
 
-// A pentatonic guzheng has no 4 or 7 — they get pressed
-// out of the strings below them, the way a player would.
+// A pentatonic guzheng has no strings tuned to 4 or 7, so a bend must be played
 1 2 3 4 | 5 6 7 1' ||`,
   },
   {

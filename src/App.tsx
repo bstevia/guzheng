@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Guzheng from './Guzheng.tsx'
+import Notation from './Notation.tsx'
 import {
   SCALES, KEYS, DEFAULT_KEY, DEFAULT_SCALE, DEFAULT_TUNING,
   buildTuning, markedNoteForKey, type Scale,
@@ -11,6 +12,14 @@ export default function App() {
   const [scale, setScale] = useState<Scale>(DEFAULT_SCALE)
   const [tuning, setTuning] = useState<Note[]>(DEFAULT_TUNING)
   const [editing, setEditing] = useState(false)
+  const [showNotation, setShowNotation] = useState(true)
+  const [pulse, setPulse] = useState<{ strings: number[]; seq: number } | null>(null)
+  const pulseSeq = useRef(0)
+
+  function handleStrike(strings: number[]): void {
+    pulseSeq.current += 1
+    setPulse({ strings, seq: pulseSeq.current })
+  }
 
   function handleKeyChange(newKey: string): void {
     setKey(newKey)
@@ -34,7 +43,8 @@ export default function App() {
         <p className="hint">
           Drag vertically across the strings to play, or strum with the keyboard
           (<kbd>A</kbd>-<kbd>'</kbd> and <kbd>Z</kbd>-<kbd>/</kbd>) — press several keys at once for chords.
-          Hold <kbd>Q</kbd> or pluck behind the bridge to bend
+          Hold <kbd>Q</kbd> or pluck behind the bridge to bend.
+          Or write a piece in numbered notation below and press play
         </p>
         <div className="controls">
           <select className="preset-select" value={key} onChange={(e) => handleKeyChange(e.target.value)}>
@@ -45,6 +55,9 @@ export default function App() {
           </select>
           <button onClick={() => setEditing((v) => !v)}>
             {editing ? 'Done tuning' : 'Tune strings'}
+          </button>
+          <button onClick={() => setShowNotation((v) => !v)}>
+            {showNotation ? 'Hide notation' : 'Notation'}
           </button>
           {editing && (
             <button className="reset" onClick={() => setTuning(buildTuning(key, scale))}>
@@ -67,7 +80,16 @@ export default function App() {
         </div>
       )}
 
-      <Guzheng tuning={tuning} markedNote={markedNoteForKey(key, scale)} />
+      <Guzheng tuning={tuning} markedNote={markedNoteForKey(key, scale)} pulse={pulse} />
+
+      {showNotation && (
+        <Notation
+          tuning={tuning}
+          musicKey={key}
+          onStrike={handleStrike}
+          onRequestKey={handleKeyChange}
+        />
+      )}
     </div>
   )
 }

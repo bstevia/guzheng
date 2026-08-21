@@ -5,6 +5,18 @@ import type { Note } from './notes.ts'
 interface GuzhengProps {
   tuning: Note[]
   markedNote: string | null
+  pulse?: { strings: number[]; seq: number } | null
+}
+
+function isTextEntry(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  if (!el?.tagName) return false
+  return (
+    el.tagName === 'INPUT' ||
+    el.tagName === 'TEXTAREA' ||
+    el.tagName === 'SELECT' ||
+    el.isContentEditable
+  )
 }
 
 const BRIDGE_FRACTION = 0.28
@@ -33,7 +45,7 @@ function letterOf(note: Note): string {
 
 type BendSource = 'key' | 'bridge'
 
-export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
+export default function Guzheng({ tuning, markedNote, pulse }: GuzhengProps) {
   const order = [...tuning.keys()]
 
   function isMarked(note: Note, index: number): boolean {
@@ -133,6 +145,7 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
+      if (isTextEntry(e.target)) return
       const strumIdx = STRUM_INDEX[e.code]
       if (strumIdx !== undefined) {
         // Prevent browser defaults (e.g. Firefox's quick-find on `/` and `'`).
@@ -180,6 +193,11 @@ export default function Guzheng({ tuning, markedNote }: GuzhengProps) {
   useEffect(() => {
     preloadSamples()
   }, [tuning])
+
+  useEffect(() => {
+    if (!pulse) return
+    for (const i of pulse.strings) flash(i)
+  }, [pulse?.seq])
 
   function handleDown(e: PointerEvent<HTMLDivElement>): void {
     lastPointerY.current = e.clientY
